@@ -1,0 +1,16 @@
+Topic: Mathematics
+Title: Understanding Linear Equations
+Grade: 8
+---
+# (Everything after the --- is the actual lesson content.)
+A linear equation is any equation that can be written in the form ax + b = c, where a, b, and c are real numbers and a ≠ 0.
+
+Key Ideas
+1. Solving by isolating x
+2. Checking solutions
+3. Real-world examples (distance, rate, time)
+
+Practice Problems
+1. 3x + 4 = 16
+2. 5(x – 2) = 20
+3. A train travels 120 km at a constant speed of 60 km/h. Write and solve an equation for the time t.
