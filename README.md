@@ -20,10 +20,10 @@ This project is a backend-powered AI tutoring system that leverages Retrieval-Au
 3. **Set up environment variables:**
    Create a `.env` file in the root directory and add the following variables:
    ```
-   DATABASE_URL=sqlite:///./test.db
-   QDRANT_HOST=localhost
-   QDRANT_PORT=6333
-   OPENAI_API_KEY=your_openai_api_key
+   DATABASE_URL=<url>
+   QDRANT_HOST=<host>
+   QDRANT_PORT=<port>
+   QDRANT_API_KEY=<key>
    ```
 
 4. **Run the application:**
@@ -52,3 +52,7 @@ To run the application with Nginx as a reverse proxy, you can use the provided `
    ```
 
 The application should now be accessible at `http://localhost`.
+
+
+## Project Screenshot
+The feature usage are shown under screenshots.
