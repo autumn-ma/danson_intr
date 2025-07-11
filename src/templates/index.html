@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EduRAG Playground</title>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style>
+        body {
+            font-family: sans-serif;
+            margin: 40px;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+        }
+        input, select, textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            background-color: #007bff;
+            color: white;
+            cursor: pointer;
+        }
+        .response {
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        background: #f8f9fa;
+        padding: 10px;
+        max-height: 60vh;
+        overflow-y: auto;
+        }
+
+        .response pre {
+        white-space: pre-wrap;
+        word-break: break-word;
+        margin: 0;
+        font-size: 0.9em;
+        line-height: 1.2;
+        }
+        #filtersContainer {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .filter-row {
+            display: flex;
+            flex-direction: column; /* Stack elements vertically within each filter component */
+            gap: 5px;
+            margin-bottom: 10px;
+            width: calc(25% - 10px); /* Approximately 1/4 screen width, accounting for gap */
+            box-sizing: border-box; /* Include padding and border in the width */
+        }
+        .filter-row select,
+        .filter-row input {
+            width: 80%; /* Take full width of the filter-row */
+        }
+        .filter-row button {
+            flex-shrink: 0;
+            align-self: flex-end; /* Align button to the right */
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>EduRAG Playground</h1>
+
+        <div class="form-group">
+            <h2>Upload Content</h2>
+            <form action="/upload-content/" method="post" enctype="multipart/form-data">
+                <input type="file" name="file" required>
+                <button type="submit">Upload</button>
+            </form>
+        </div>
+
+        <div class="form-group">
+            <h2>Ask a Question</h2>
+            <form action="/ask/" method="post">
+                <label for="question">Question:</label>
+                <input type="text" id="question" name="question" required>
+                <label for="persona">Persona:</label>
+                <select id="persona" name="persona">
+                    <option value="friendly">Friendly</option>
+                    <option value="strict">Strict</option>
+                    <option value="humorous">Humorous</option>
+                </select>
+                <button type="submit">Ask</button>
+            </form>
+        </div>
+
+        <div class="form-group">
+            <h2>Get Topics</h2>
+            <form id="getTopicsForm" action="/topics/" method="get">
+                <div id="filtersContainer">
+                </div>
+                <button type="button" id="addFilterButton">Add Filter</button>
+                <button type="submit">Get Topics</button>
+            </form>
+        </div>
+
+        <div class="form-group">
+            <h2>Get Metrics</h2>
+            <form action="/metrics/" method="get">
+                <button type="submit">Get Metrics</button>
+            </form>
+        </div>
+
+        <div id="response-area">
+            {% if response %}
+                {{ response | safe }}
+            {% endif %}
+        </div>
+
+        <div id="md-response-area">
+            {% if markdown %}
+                {{ markdown | safe }}
+            {% endif %}
+        </div>
+    </div>
+</body>
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+      const container = document.getElementById("md-response-area");
+      const md = container.textContent;
+      container.innerHTML = marked.parse(md);
+
+      const filtersContainer = document.getElementById("filtersContainer");
+      const addFilterButton = document.getElementById("addFilterButton");
+      const getTopicsForm = document.getElementById("getTopicsForm");
+
+      const allFilterOptions = ["topic", "title", "grade", "content"];
+      let activeFilters = new Set();
+
+      function updateFilterSelects() {
+        document.querySelectorAll(".filter-row select").forEach(selectElement => {
+          const currentValue = selectElement.value;
+          selectElement.innerHTML = "";
+
+          const availableOptions = allFilterOptions.filter(option => !activeFilters.has(option) || option === currentValue);
+
+          if (!currentValue || !availableOptions.includes(currentValue)) {
+            const defaultOption = document.createElement("option");
+            defaultOption.value = "";
+            defaultOption.textContent = "--Select--";
+            selectElement.appendChild(defaultOption);
+          }
+
+          availableOptions.forEach(option => {
+            const optionElement = document.createElement("option");
+            optionElement.value = option;
+            optionElement.textContent = option.charAt(0).toUpperCase() + option.slice(1);
+            selectElement.appendChild(optionElement);
+          });
+
+          if (availableOptions.includes(currentValue)) {
+            selectElement.value = currentValue;
+          } else {
+            selectElement.value = "";
+          }
+        });
+      }
+
+      addFilterButton.addEventListener("click", () => {
+        const filterDiv = document.createElement("div");
+        filterDiv.classList.add("filter-row");
+        filterDiv.innerHTML = `
+          <select class="filter-type-select">
+            <!-- Options will be populated by updateFilterSelects -->
+          </select>
+          <input type="text" class="filter-value-input" placeholder="Enter value">
+          <button type="button" class="remove-filter-button">X</button>
+        `;
+        filtersContainer.appendChild(filterDiv);
+        updateFilterSelects();
+
+        const newSelect = filterDiv.querySelector(".filter-type-select");
+        newSelect.addEventListener("change", (event) => {
+          const oldSelected = event.target.dataset.previousValue;
+          const newSelected = event.target.value;
+
+          if (oldSelected && activeFilters.has(oldSelected)) {
+            activeFilters.delete(oldSelected);
+          }
+          if (newSelected) {
+            activeFilters.add(newSelected);
+          }
+          event.target.dataset.previousValue = newSelected;
+
+          updateFilterSelects();
+        });
+      });
+
+      filtersContainer.addEventListener("click", (event) => {
+        if (event.target.classList.contains("remove-filter-button")) {
+          const filterRow = event.target.closest(".filter-row");
+          const selectElement = filterRow.querySelector(".filter-type-select");
+          const removedFilterType = selectElement.value;
+
+          if (removedFilterType && activeFilters.has(removedFilterType)) {
+            activeFilters.delete(removedFilterType);
+          }
+          filterRow.remove();
+          updateFilterSelects();
+        }
+      });
+
+      getTopicsForm.addEventListener("submit", (event) => {
+        event.preventDefault();
+        const queryParams = new URLSearchParams();
+        document.querySelectorAll(".filter-row").forEach(filterRow => {
+          const type = filterRow.querySelector(".filter-type-select").value;
+          const value = filterRow.querySelector(".filter-value-input").value;
+          if (type && value) {
+            queryParams.append(type, value);
+          }
+        });
+        window.location.href = `/topics/?${queryParams.toString()}`;
+      });
+    });
+  </script>
+</html>
